@@ -75,18 +75,15 @@ Sint32 ToSdlScalar(float v) {
 } // namespace
 
 void GameObject::UpdateMovement(float dt) {
-	// UPDATE VELOCITY AND ANGULAR VELOCITY:
-
+	// Actualizar velocidades
 	linearVelocity = linearVelocity + (linearAcceleration * dt);
 	angularVelocity += (angularAcceleration * dt);
 
-	// APPLY DRAG:
-
+	// Fricción / drag
 	linearVelocity = linearVelocity * (1.0f - linearDrag * dt);
 	angularVelocity *= (1.0f - AngularDrag * dt);
 
-	//UPDATE POSITION AND ROTATION:
-
+	// Posición y rotación
 	position = position + (linearVelocity * dt);
 	rotation += angularVelocity * dt;
 	if (!std::isfinite(rotation)) {
@@ -121,6 +118,7 @@ void GameObject::Render(SDL_Renderer* renderer) {
 		return;
 	}
 
+	// [AQUÍ SE RECORTA EL SPRITE]: Se define el rectángulo origen (source rect) recortando la hoja de sprites
 	const SDL_Rect source{
 		ToSdlScalar(padding.x),
 		ToSdlScalar(padding.y),

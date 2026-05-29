@@ -12,10 +12,10 @@ protected:
 	Vector2 scale;
 
 	SDL_Texture* texture;
-	Vector2 size; // Tamaùo de la textura, with and height
-	Vector2 padding; // Pos texture cut
+	Vector2 size; // Tama√±o de la textura (ancho y alto)
+	Vector2 padding; // Recorte de la textura (padding)
 
-	//MOVEMENT	
+	// MOVIMIENTO	
 	Vector2 linearVelocity;
 	float angularVelocity;
 
@@ -27,7 +27,6 @@ protected:
 
 	float linearAccFactor;
 	float angularAccFactor;
-
 
 	virtual void UpdateMovement(float dt);
 
@@ -42,5 +41,10 @@ public:
 
 	/** Asteroids: al salir por un borde, reaparece por el opuesto (toroide). */
 	void WrapToroidal(float playfieldW, float playfieldH);
+
+	// Getters para el HUD
+	SDL_Texture* GetTexture() const { return texture; }
+	Vector2 GetSize() const { return size; }
+	Vector2 GetPadding() const { return padding; }
 
 };

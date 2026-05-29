@@ -15,7 +15,7 @@ namespace {
 constexpr float kRockSpeedMin = 24.f;
 constexpr float kRockSpeedMax = 56.f;
 constexpr float kSpawnAvoidRadius = 130.f;
-constexpr float kLargeRockHalf = 41.f;
+constexpr float kLargeRockHalf = 49.5f;
 
 float LenSq(const Vector2& v) {
 	return v.x * v.x + v.y * v.y;
@@ -30,26 +30,29 @@ Vector2 RandomUnitVector() {
 	return Vector2(std::cos(a), std::sin(a));
 }
 
-Vector2 RandomRockVelocity() {
+// Genera velocidad aleatoria multiplicada por un factor según la oleada (van más rápido cada nivel)
+Vector2 RandomRockVelocity(int waveLevel) {
 	Vector2 d = RandomUnitVector();
-	const float s = kRockSpeedMin + (float)rand() / (float)RAND_MAX * (kRockSpeedMax - kRockSpeedMin);
+	const float factor = 1.0f + waveLevel * 0.15f; // +15% de velocidad por cada nivel
+	const float s = (kRockSpeedMin + (float)rand() / (float)RAND_MAX * (kRockSpeedMax - kRockSpeedMin)) * factor;
 	return d * s;
 }
 
-int PointsForDestroyedRock(AsteroidTier t) {
+// Puntuaciones oficiales requeridas: Grande=50, Mediano=30, Pequeño=20
+int PointsForDestroyedRock(CategoriaAsteroide t) {
 	switch (t) {
-	case AsteroidTier::Large:
-		return 20;
-	case AsteroidTier::Medium:
+	case CategoriaAsteroide::Grande:
 		return 50;
-	case AsteroidTier::Small:
-		return 100;
+	case CategoriaAsteroide::Mediano:
+		return 30;
+	case CategoriaAsteroide::Pequeno:
+		return 20;
 	default:
 		return 0;
 	}
 }
 
-} // namespace
+} 
 
 void GamePlayScene::SpawnWave() {
 	if (cachedRenderer == nullptr || playfieldW <= 0 || playfieldH <= 0) {
@@ -67,7 +70,7 @@ void GamePlayScene::SpawnWave() {
 	const int count = (std::min)(4 + waveLevel * 2, 11);
 	for (int i = 0; i < count; ++i) {
 		Vector2 pos = RandomEdgePosition(pw, ph, avoid, kSpawnAvoidRadius);
-		objects.push_back(new Asteroid(cachedRenderer, pos, AsteroidTier::Large, RandomRockVelocity(), RRange(-26.f, 26.f)));
+		objetos.push_back(new Asteroide(cachedRenderer, pos, CategoriaAsteroide::Grande, RandomRockVelocity(waveLevel), RRange(-26.f, 26.f)));
 	}
 }
 
@@ -100,9 +103,9 @@ Vector2 GamePlayScene::RandomEdgePosition(float pw, float ph, const Vector2& avo
 
 size_t GamePlayScene::CountLiveAsteroids() const {
 	size_t n = 0;
-	for (GameObject* o : objects) {
-		Asteroid* a = dynamic_cast<Asteroid*>(o);
-		if (a != nullptr && !a->IsDead()) {
+	for (GameObject* o : objetos) {
+		Asteroide* a = dynamic_cast<Asteroide*>(o);
+		if (a != nullptr && !a->EstaMuerto()) {
 			++n;
 		}
 	}
@@ -110,10 +113,10 @@ size_t GamePlayScene::CountLiveAsteroids() const {
 }
 
 void GamePlayScene::KillAllBullets() {
-	for (size_t i = 0; i < objects.size();) {
-		if (dynamic_cast<Bullet*>(objects[i]) != nullptr) {
-			delete objects[i];
-			objects.erase(objects.begin() + static_cast<std::ptrdiff_t>(i));
+	for (size_t i = 0; i < objetos.size();) {
+		if (dynamic_cast<Bala*>(objetos[i]) != nullptr) {
+			delete objetos[i];
+			objetos.erase(objetos.begin() + static_cast<std::ptrdiff_t>(i));
 		} else {
 			++i;
 		}
@@ -122,28 +125,28 @@ void GamePlayScene::KillAllBullets() {
 
 void GamePlayScene::ResolveBulletVsAsteroid() {
 	const float kShrink = kHitboxShrink;
-	for (size_t i = 0; i < objects.size(); ++i) {
-		Bullet* b = dynamic_cast<Bullet*>(objects[i]);
-		if (b == nullptr || b->IsDead()) {
+	for (size_t i = 0; i < objetos.size(); ++i) {
+		Bala* b = dynamic_cast<Bala*>(objetos[i]);
+		if (b == nullptr || b->EstaMuerto()) {
 			continue;
 		}
 		const RectF br = ShrinkRectCentered(b->WorldBounds(), kShrink);
-		for (size_t j = 0; j < objects.size(); ++j) {
+		for (size_t j = 0; j < objetos.size(); ++j) {
 			if (i == j) {
 				continue;
 			}
-			Asteroid* a = dynamic_cast<Asteroid*>(objects[j]);
-			if (a == nullptr || a->IsDead()) {
+			Asteroide* a = dynamic_cast<Asteroide*>(objetos[j]);
+			if (a == nullptr || a->EstaMuerto()) {
 				continue;
 			}
 			const RectF ar = ShrinkRectCentered(a->WorldBounds(), kShrink);
 			if (!RectOverlap(br, ar)) {
 				continue;
 			}
-			score += PointsForDestroyedRock(a->GetTier());
-			b->Hit();
-			std::vector<Asteroid*> spawns;
-			a->ExplodeFromShot(cachedRenderer, spawns);
+			score += PointsForDestroyedRock(a->ObtenerCategoria());
+			b->Impactar();
+			std::vector<Asteroide*> spawns;
+			a->ExplotarPorDisparo(cachedRenderer, spawns);
 			AppendSpawnedAsteroids(spawns);
 			break;
 		}
@@ -155,41 +158,49 @@ void GamePlayScene::ResolveShipVsAsteroid() {
 		return;
 	}
 	const RectF sr = ShrinkRectCentered(ship->WorldBounds(), 0.78f);
-	for (GameObject* o : objects) {
-		Asteroid* a = dynamic_cast<Asteroid*>(o);
-		if (a == nullptr || a->IsDead()) {
+	for (GameObject* o : objetos) {
+		Asteroide* a = dynamic_cast<Asteroide*>(o);
+		if (a == nullptr || a->EstaMuerto()) {
 			continue;
 		}
 		const RectF ar = ShrinkRectCentered(a->WorldBounds(), kHitboxShrink);
 		if (RectOverlap(sr, ar)) {
-			ship->CenterOnPlayfield(static_cast<float>(playfieldW), static_cast<float>(playfieldH));
-			ship->SetInvulnerable(kShipRespawnInvuln);
+			vidas--; // Perder una vida al colisionar
+			if (vidas <= 0) {
+				// Muerte: volver al menú principal
+				finalizada = true;
+				escenaDestino = "MainMenu";
+			} else {
+				// Respawn e invulnerabilidad temporal
+				ship->CenterOnPlayfield(static_cast<float>(playfieldW), static_cast<float>(playfieldH));
+				ship->SetInvulnerable(kShipRespawnInvuln);
+			}
 			break;
 		}
 	}
 }
 
-void GamePlayScene::AppendSpawnedAsteroids(std::vector<Asteroid*>& spawns) {
-	for (Asteroid* a : spawns) {
+void GamePlayScene::AppendSpawnedAsteroids(std::vector<Asteroide*>& spawns) {
+	for (Asteroide* a : spawns) {
 		if (a != nullptr) {
-			objects.push_back(a);
+			objetos.push_back(a);
 		}
 	}
 	spawns.clear();
 }
 
 void GamePlayScene::RemoveDeadBulletsAndAsteroids() {
-	for (size_t i = 0; i < objects.size();) {
-		Bullet* b = dynamic_cast<Bullet*>(objects[i]);
-		if (b != nullptr && b->IsDead()) {
+	for (size_t i = 0; i < objetos.size();) {
+		Bala* b = dynamic_cast<Bala*>(objetos[i]);
+		if (b != nullptr && b->EstaMuerto()) {
 			delete b;
-			objects.erase(objects.begin() + static_cast<std::ptrdiff_t>(i));
+			objetos.erase(objetos.begin() + static_cast<std::ptrdiff_t>(i));
 			continue;
 		}
-		Asteroid* a = dynamic_cast<Asteroid*>(objects[i]);
-		if (a != nullptr && a->IsDead()) {
+		Asteroide* a = dynamic_cast<Asteroide*>(objetos[i]);
+		if (a != nullptr && a->EstaMuerto()) {
 			delete a;
-			objects.erase(objects.begin() + static_cast<std::ptrdiff_t>(i));
+			objetos.erase(objetos.begin() + static_cast<std::ptrdiff_t>(i));
 			continue;
 		}
 		++i;
@@ -210,6 +221,7 @@ void GamePlayScene::Start(SDL_Renderer* rend) {
 	}
 
 	score = 0;
+	vidas = 3; // Inicializar vidas en 3 al empezar la partida
 	scoreTextureForValue = -1;
 	waveLevel = 0;
 	TryLoadScoreFont();
@@ -219,7 +231,7 @@ void GamePlayScene::Start(SDL_Renderer* rend) {
 	if (playfieldW > 0 && playfieldH > 0) {
 		ship->CenterOnPlayfield(static_cast<float>(playfieldW), static_cast<float>(playfieldH));
 	}
-	objects.push_back(ship);
+	objetos.push_back(ship);
 	fireCooldownRemaining = 0.f;
 }
 
@@ -236,7 +248,7 @@ void GamePlayScene::Update(float dt) {
 			Vector2 spawnPos;
 			Vector2 spawnVel;
 			ship->GetBulletSpawn(spawnPos, spawnVel, kBulletSpeed);
-			objects.push_back(new Bullet(cachedRenderer, spawnPos, spawnVel));
+			objetos.push_back(new Bala(cachedRenderer, spawnPos, spawnVel));
 		}
 	}
 
@@ -255,9 +267,18 @@ void GamePlayScene::Update(float dt) {
 
 	const float w = static_cast<float>(playfieldW);
 	const float h = static_cast<float>(playfieldH);
-	for (GameObject* obj : objects) {
+	for (GameObject* obj : objetos) {
 		if (obj != nullptr) {
-			obj->WrapToroidal(w, h);
+			Bala* b = dynamic_cast<Bala*>(obj);
+			if (b != nullptr) {
+				// Si la bala toca o supera cualquier borde, se marca como muerta para ser eliminada
+				RectF bounds = b->WorldBounds();
+				if (bounds.x < 0.f || bounds.x + bounds.w > w || bounds.y < 0.f || bounds.y + bounds.h > h) {
+					b->Impactar();
+				}
+			} else {
+				obj->WrapToroidal(w, h);
+			}
 		}
 	}
 }
@@ -265,6 +286,7 @@ void GamePlayScene::Update(float dt) {
 void GamePlayScene::Render(SDL_Renderer* rend) {
 	Scene::Render(rend);
 	DrawScoreHud(rend);
+	DrawLivesHud(rend); // Dibujar HUD de vidas en pantalla
 }
 
 void GamePlayScene::Exit() {
@@ -344,4 +366,36 @@ void GamePlayScene::DrawScoreHud(SDL_Renderer* rend) {
 	SDL_QueryTexture(scoreTexture, nullptr, nullptr, &tw, &th);
 	const SDL_Rect dst{ 12, 10, tw, th };
 	SDL_RenderCopy(rend, scoreTexture, nullptr, &dst);
+}
+
+// Representa las vidas del jugador usando el propio recorte del sprite de la nave
+void GamePlayScene::DrawLivesHud(SDL_Renderer* rend) {
+	if (rend == nullptr || ship == nullptr) return;
+	SDL_Texture* tex = ship->GetTexture();
+	if (tex == nullptr) return;
+
+	const Vector2 sz = ship->GetSize();
+	const Vector2 pad = ship->GetPadding();
+
+	const int w = static_cast<int>(sz.x * 0.6f);
+	const int h = static_cast<int>(sz.y * 0.6f);
+
+	int screenW = 800, screenH = 600;
+	SDL_GetRendererOutputSize(rend, &screenW, &screenH);
+
+	// [AQUÍ SE RECORTA EL SPRITE PARA EL HUD]: Recorte del sprite de la nave
+	const SDL_Rect src{
+		static_cast<int>(pad.x),
+		static_cast<int>(pad.y),
+		static_cast<int>(sz.x),
+		static_cast<int>(sz.y)
+	};
+
+	for (int i = 0; i < vidas; ++i) {
+		const int posX = screenW - 20 - (i + 1) * (w + 8);
+		const int posY = 12;
+		const SDL_Rect dst{ posX, posY, w, h };
+		// Dibujamos las naves representando vidas apuntando hacia arriba
+		SDL_RenderCopyEx(rend, tex, &src, &dst, 0.0, nullptr, SDL_FLIP_NONE);
+	}
 }

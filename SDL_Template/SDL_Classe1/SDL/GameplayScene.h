@@ -26,6 +26,7 @@ private:
 	float fireCooldownRemaining = 0.f;
 	int waveLevel = 0;
 	int score = 0;
+	int vidas = 3; // 3 vidas iniciales
 	TTF_Font* scoreFont = nullptr;
 	SDL_Texture* scoreTexture = nullptr;
 	int scoreTextureForValue = -1;
@@ -40,7 +41,7 @@ private:
 	void KillAllBullets();
 	void ResolveBulletVsAsteroid();
 	void ResolveShipVsAsteroid();
-	void AppendSpawnedAsteroids(std::vector<Asteroid*>& spawns);
+	void AppendSpawnedAsteroids(std::vector<Asteroide*>& spawns);
 	void RemoveDeadBulletsAndAsteroids();
 	static Vector2 RandomEdgePosition(float pw, float ph, const Vector2& avoidCenter, float avoidRadius);
 
@@ -48,4 +49,5 @@ private:
 	bool TryLoadScoreFont();
 	void EnsureScoreTexture(SDL_Renderer* rend);
 	void DrawScoreHud(SDL_Renderer* rend);
+	void DrawLivesHud(SDL_Renderer* rend); // Dibuja las vidas en la UI
 };

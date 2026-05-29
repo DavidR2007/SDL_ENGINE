@@ -1,31 +1,33 @@
 #pragma once
 #include "GameObject.h"
 #include <vector>
+#include <string>
 
 class Scene {
 protected:
-	std::vector<GameObject*> objects;
-	bool finished = false;
-	std::string targetScene;
+	std::vector<GameObject*> objetos; // Objetos activos en la escena
+	bool finalizada = false;          // Flag para cambiar de escena
+	std::string escenaDestino;        // Nombre de la escena siguiente
 
 public:
 	virtual ~Scene() {
-		for (GameObject* o : objects) {
+		// Limpieza de objetos para evitar fugas de memoria
+		for (GameObject* o : objetos) {
 			delete o;
 		}
-		objects.clear();
+		objetos.clear();
 	}
 
 	virtual void Start(SDL_Renderer *rend) {
-		for (GameObject* o : objects) {
+		for (GameObject* o : objetos) {
 			delete o;
 		}
-		objects.clear();
-		finished = false;
+		objetos.clear();
+		finalizada = false;
 	}
 
 	virtual void Update(float dt) {
-		for (GameObject* var : objects) {
+		for (GameObject* var : objetos) {
 			if (var != nullptr) {
 				var->Update(dt);
 			}
@@ -33,7 +35,7 @@ public:
 	}
 
 	virtual void Render(SDL_Renderer* rend) {
-		for (GameObject* var : objects) {
+		for (GameObject* var : objetos) {
 			if (var != nullptr && rend != nullptr) {
 				var->Render(rend);
 			}
@@ -42,7 +44,7 @@ public:
 
 	virtual void Exit() = 0;
 
-	bool IsFinished() { return finished; }
-	std::string GetTargetScene() { return targetScene; }
+	bool EstaFinalizada() { return finalizada; }
+	std::string ObtenerEscenaDestino() { return escenaDestino; }
 
 };

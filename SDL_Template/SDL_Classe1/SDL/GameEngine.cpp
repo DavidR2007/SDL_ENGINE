@@ -34,45 +34,45 @@ void GameEngine::InitWindowAndRenderer(int windowWith, int windowHeight) {
 }
 
 void GameEngine::Update() {
-	//TIME CONTROL
+	// CONTROL DE TIEMPO
 	float dt = 0.0f;
 	float lastTime = SDL_GetPerformanceCounter() / (float)SDL_GetPerformanceFrequency();
 
 	const int FPS = 60;
 	const float frameTime = 1.0f / (float)FPS;
 
-	//SCENES
+	// ESCENAS
 	std::map<std::string, Scene*> gameScene;
 	gameScene["MainMenu"] = new MenuScene();
 	gameScene["Gameplay"] = new GamePlayScene();
 	gameScene["HighScore"] = new HighscoreScene();
 
-	Scene* currentScene = gameScene["Gameplay"];
+	Scene* currentScene = gameScene["MainMenu"];
 	currentScene->Start(renderer);
 
 	while (!IM.GetQuit())
 	{
-		//DELTA TIME CONTROL
+		// CONTROL DE DELTA TIME
 		float currentTime = SDL_GetPerformanceCounter() / (float)SDL_GetPerformanceFrequency();
 		dt += currentTime - lastTime;
 		lastTime = currentTime;
 
 		if (dt > frameTime) {
-			//INPUT
+			// ENTRADA
 			IM.Listen();
 
-			//UPDATE
+			// ACTUALIZACIÓN
 			currentScene->Update(dt);
 
-			//RENDER
+			// RENDERIZADO
 			SDL_RenderClear(renderer);
 			currentScene->Render(renderer);
 			SDL_RenderPresent(renderer);
 
-			//SCENE TRANSITION
-			if (currentScene->IsFinished()) {
+			// TRANSICIÓN DE ESCENA
+			if (currentScene->EstaFinalizada()) {
 				currentScene->Exit();
-				currentScene = gameScene[currentScene->GetTargetScene()];
+				currentScene = gameScene[currentScene->ObtenerEscenaDestino()];
 				currentScene->Start(renderer);
 			}
 

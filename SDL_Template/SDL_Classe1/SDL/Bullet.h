@@ -1,15 +1,14 @@
 #pragma once
 #include "GameObject.h"
 
-class Bullet : public GameObject {
-	float lifetime = 0.f;
-	bool dead = false;
+class Bala : public GameObject {
+	bool muerto = false;
 
 public:
-	Bullet(SDL_Renderer* renderer, Vector2 pos, Vector2 velocity);
+	Bala(SDL_Renderer* renderer, Vector2 pos, Vector2 velocidad);
 
 	void Update(float dt) override;
 
-	bool IsDead() const { return dead; }
-	void Hit();
+	bool EstaMuerto() const { return muerto; }
+	void Impactar();
 };

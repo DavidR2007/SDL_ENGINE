@@ -2,7 +2,7 @@
 
 void InputManager::Listen() {
 
-	//Update the state from the previous frame
+	// Actualizar el estado del fotograma anterior
 	for (std::unordered_map<Sint32, KeyState>::iterator it = keys.begin(); it != keys.end(); it++) {
 		if (it->second == DOWN)
 			it->second = HOLD;
@@ -10,10 +10,10 @@ void InputManager::Listen() {
 			it->second = EMPTY;
 	}
 
-	//Read the mouse coords
+	// Leer las coordenadas del ratón
 	SDL_GetMouseState(&mouseX, &mouseY);
 
-	//Process the input of this frame
+	// Procesar la entrada de este fotograma
 	SDL_Event e;
 	while (SDL_PollEvent(&e) != 0){
 

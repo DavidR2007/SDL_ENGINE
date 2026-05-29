@@ -2,18 +2,18 @@
 #include "GameObject.h"
 #include <vector>
 
-enum class AsteroidTier { Large, Medium, Small };
+enum class CategoriaAsteroide { Grande, Mediano, Pequeno };
 
-class Asteroid : public GameObject {
-	AsteroidTier tier = AsteroidTier::Large;
-	bool dead = false;
+class Asteroide : public GameObject {
+	CategoriaAsteroide categoria = CategoriaAsteroide::Grande;
+	bool muerto = false;
 
 public:
-	Asteroid(SDL_Renderer* renderer, Vector2 pos, AsteroidTier t, Vector2 vel, float angularVelDeg);
+	Asteroide(SDL_Renderer* renderer, Vector2 pos, CategoriaAsteroide t, Vector2 vel, float angularVelDeg);
 
-	bool IsDead() const { return dead; }
-	AsteroidTier GetTier() const { return tier; }
+	bool EstaMuerto() const { return muerto; }
+	CategoriaAsteroide ObtenerCategoria() const { return categoria; }
 
 	/** Marca el meteorito como destruido y encola 0–2 hijos más pequeños (como el Asteroids clásico). */
-	void ExplodeFromShot(SDL_Renderer* renderer, std::vector<Asteroid*>& outSpawn);
+	void ExplotarPorDisparo(SDL_Renderer* renderer, std::vector<Asteroide*>& outSpawn);
 };

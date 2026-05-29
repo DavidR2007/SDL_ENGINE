@@ -5,6 +5,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// [AQUÍ SE RECORTA EL SPRITE DE LA NAVE]: Coordenadas (X=0, Y=0) y tamaño (ancho=32, alto=40) en asteroids_spritesheet.png
 SpaceShip::SpaceShip(SDL_Renderer* renderer, Vector2 pos, float rot, Vector2 scl) : GameObject(renderer, Vector2(32,40), Vector2(0,0))
 {
 	position = pos;
@@ -20,8 +21,8 @@ SpaceShip::SpaceShip(SDL_Renderer* renderer, Vector2 pos, float rot, Vector2 scl
 	linearDrag = 1.2f;
 	AngularDrag = 6.0f;
 
-	linearAccFactor = 500.0f; // Px / sec^2
-	angularAccFactor = 2400.0f; // Deg / sec^2 (mitad de la sensación de giro anterior)
+	linearAccFactor = 500.0f; // Px / seg^2
+	angularAccFactor = 2400.0f; // Grados / seg^2 (mitad de la sensación de giro anterior)
 }
 
 
@@ -45,13 +46,13 @@ void SpaceShip::CenterOnPlayfield(float playfieldW, float playfieldH) {
 }
 
 void SpaceShip::UpdateMovement(float dt) {
-	//INPUT
+	// ENTRADA
 
 	linearAcceleration = Vector2();
 
 	float thrustSign = 0.f;
-	if (IM.GetKey(SDLK_w, HOLD) || IM.GetKey(SDLK_w, DOWN)) thrustSign += 1.f;
-	if (IM.GetKey(SDLK_s, HOLD) || IM.GetKey(SDLK_s, DOWN)) thrustSign -= 1.f;
+	if (IM.GetKey(SDLK_UP, HOLD) || IM.GetKey(SDLK_UP, DOWN) || IM.GetKey(SDLK_w, HOLD) || IM.GetKey(SDLK_w, DOWN)) thrustSign += 1.f;
+	if (IM.GetKey(SDLK_DOWN, HOLD) || IM.GetKey(SDLK_DOWN, DOWN) || IM.GetKey(SDLK_s, HOLD) || IM.GetKey(SDLK_s, DOWN)) thrustSign -= 1.f;
 
 	if (thrustSign != 0.f)
 	{
@@ -63,11 +64,11 @@ void SpaceShip::UpdateMovement(float dt) {
 	}
 
 	angularAcceleration = 0.f;
-	if (IM.GetKey(SDLK_d, HOLD) || IM.GetKey(SDLK_d, DOWN))
+	if (IM.GetKey(SDLK_RIGHT, HOLD) || IM.GetKey(SDLK_RIGHT, DOWN) || IM.GetKey(SDLK_d, HOLD) || IM.GetKey(SDLK_d, DOWN))
 	{
 		angularAcceleration = angularAccFactor;
 	}
-	else if (IM.GetKey(SDLK_a, HOLD) || IM.GetKey(SDLK_a, DOWN))
+	else if (IM.GetKey(SDLK_LEFT, HOLD) || IM.GetKey(SDLK_LEFT, DOWN) || IM.GetKey(SDLK_a, HOLD) || IM.GetKey(SDLK_a, DOWN))
 	{
 		angularAcceleration = -angularAccFactor;
 	}
